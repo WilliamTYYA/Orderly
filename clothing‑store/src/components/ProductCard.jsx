@@ -1,10 +1,9 @@
-import React from "react";
-
+/* ===== File: ProductCard.jsx ========================================== */
 export default function ProductCard({ product, onAdd }) {
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow hover:shadow-lg transition duration-200 flex flex-col">
       <img
-        src={product.imageUrl}
+        src={typeof product.image === "string" ? product.image : "/fallback.jpg"}
         alt={product.name}
         className="h-48 w-full object-cover"
       />
@@ -13,9 +12,7 @@ export default function ProductCard({ product, onAdd }) {
         <p className="text-gray-500 capitalize text-sm">
           {product.gender} • {product.category}
         </p>
-        <p className="font-bold mt-2 mb-4">
-          ${product.price.toFixed(2)}
-        </p>
+        <p className="font-bold mt-2 mb-4">${Number(product.price).toFixed(2)}</p>
         <button
           onClick={() => onAdd(product)}
           className="mt-auto bg-black text-white rounded-xl py-2 hover:bg-gray-800"
