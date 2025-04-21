@@ -3,7 +3,7 @@ export default function ProductCard({ product, onAdd }) {
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow hover:shadow-lg transition duration-200 flex flex-col">
       <img
-        src={typeof product.image === "string" ? product.image : "/fallback.jpg"}
+        src={typeof product.imageUrl === "string" ? product.imageUrl : "/fallback.jpg"}
         alt={product.name}
         className="h-48 w-full object-cover"
       />

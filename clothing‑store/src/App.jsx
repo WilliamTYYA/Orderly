@@ -1,56 +1,84 @@
+// src/App.jsx
 import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
 
-import { useCart } from "./components/CartContext.jsx";
-import RequireAuth from "./components/RequireAuth.jsx";
-import Filters from "./components/Filters.jsx";
-import ProductList from "./components/ProductList.jsx";
-import CartDrawer from "./components/CartDrawer.jsx";
-import SearchBar from "./components/SearchBar.jsx";
-import CheckoutPage from "./components/CheckoutPage.jsx";
+import { useCart }        from "./components/CartContext.jsx";
+import RequireAuth         from "./components/RequireAuth.jsx";
+import Filters             from "./components/Filters.jsx";
+import ProductList         from "./components/ProductList.jsx";
+import CartDrawer          from "./components/CartDrawer.jsx";
+import SearchBar           from "./components/SearchBar.jsx";
+import CheckoutPage        from "./components/CheckoutPage.jsx";
 
-// import sampleProducts from "./sampleData.js";
+import { useAuthenticator } from "@aws-amplify/ui-react";
+
+const API_BASE = "https://ht6v4zlpkd.execute-api.us-east-1.amazonaws.com/prod";
 
 export default function App() {
+  const [products, setProducts] = useState([]);
+  const [filters,  setFilters]  = useState({ gender: "", category: "", range: [0, 100] });
+  const [search,   setSearch]    = useState("");
+  const [openCart, setOpenCart]  = useState(false);
 
-  const [sampleProducts, setSampleProducts] = useState([]);
+  const { add } = useCart();
+  const { authStatus, signOut } = useAuthenticator((ctx) => [ctx.authStatus]);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('https://ht6v4zlpkd.execute-api.us-east-1.amazonaws.com/prod/products')
-      .then((res) => res.json())
-      .then((data) => setSampleProducts(data))
-      .catch((err) => console.error('Error fetching products:', err));
+    fetch(`${API_BASE}/products`)
+      .then((r) => r.json())
+      .then((items) => {
+        const prods = items.map((p) => {
+          const id       = p.id?.S ?? p.id;
+          const name     = p.name?.S ?? p.name;
+          const price    = p.price?.N ? parseFloat(p.price.N) : Number(p.price);
+          const category = p.category?.S ?? p.category;
+          const gender   = p.gender?.S ?? p.gender;
+          const imageUrl = p.image?.S ?? p.image;
+          return { id, name, price, category, gender, imageUrl };
+        });
+        setProducts(prods);
+        if (prods.length) {
+          const ps = prods.map((x) => x.price);
+          setFilters((f) => ({
+            ...f,
+            range: [Math.min(...ps), Math.max(...ps)],
+          }));
+        }
+      })
+      .catch(console.error);
   }, []);
 
-  // 1) derive the min/max price from your data
-  const prices = sampleProducts.map((p) => Number(p.price));
-  const absoluteMin = prices.length ? Math.min(...prices) : 0;
-  const absoluteMax = prices.length ? Math.max(...prices) : 100;
-
-  // 2) initialize filters state using those values
-  const [filters, setFilters] = useState({
-    gender: "",
-    category: "",
-    range: [absoluteMin, absoluteMax],
-  });
-  const [search, setSearch] = useState("");
-  const [openCart, setOpenCart] = useState(false);
-
-  // 3) useCart() now works because CartProvider wraps App in main.jsx
-  const { add } = useCart();
+  function handleAdd(product) {
+    if (authStatus !== "authenticated") {
+      navigate("/checkout");
+      return;
+    }
+    add(product);
+  }
 
   return (
-    <BrowserRouter>
+    <>
       <CartDrawer open={openCart} onClose={() => setOpenCart(false)} />
 
       <header className="flex items-center justify-between p-4 bg-white shadow sticky top-0 z-30">
         <Link to="/" className="text-2xl font-bold">
           <span className="text-pink-600">clothy.</span>
         </Link>
-        <button onClick={() => setOpenCart(true)}>
-          <ShoppingCart size={28} />
-        </button>
+        <div className="flex items-center space-x-4">
+          {authStatus === "authenticated" && (
+            <button
+              onClick={signOut}
+              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition"
+            >
+              Sign Out
+            </button>
+          )}
+          <button onClick={() => setOpenCart(true)}>
+            <ShoppingCart size={28} />
+          </button>
+        </div>
       </header>
 
       <main className="max-w-7xl mx-auto p-4">
@@ -59,20 +87,19 @@ export default function App() {
             path="/"
             element={
               <div className="grid lg:grid-cols-[250px_1fr] gap-6">
-                {/* pass min/max into Filters */}
                 <Filters
-                  min={absoluteMin}
-                  max={absoluteMax}
+                  min={filters.range[0]}
+                  max={filters.range[1]}
                   filters={filters}
                   setFilters={setFilters}
                 />
                 <div className="space-y-6">
                   <SearchBar value={search} onChange={setSearch} />
                   <ProductList
-                    products={sampleProducts}
+                    products={products}
                     filters={filters}
                     search={search}
-                    onAdd={add}
+                    onAdd={handleAdd}
                   />
                 </div>
               </div>
@@ -88,6 +115,6 @@ export default function App() {
           />
         </Routes>
       </main>
-    </BrowserRouter>
+    </>
   );
 }

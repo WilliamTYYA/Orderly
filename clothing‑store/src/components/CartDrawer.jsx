@@ -22,7 +22,7 @@ export default function CartDrawer({ open, onClose }) {
         {items.length === 0 && <p>Your cart is empty.</p>}
         {items.map((item) => (
           <div key={item.id} className="flex gap-3">
-            <img src={item.image} alt="" className="w-16 h-16 object-cover" />
+            <img src={item.imageUrl} alt="" className="w-16 h-16 object-cover" />
             <div className="flex-1">
               <p className="font-medium">{item.name}</p>
               <p className="text-sm text-gray-500">
