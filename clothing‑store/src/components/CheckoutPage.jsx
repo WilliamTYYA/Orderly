@@ -1,25 +1,54 @@
 // src/components/CheckoutPage.jsx
 import React from "react";
 import { useCart } from "./CartContext.jsx";
+import { useAuthenticator } from "@aws-amplify/ui-react";
+// import { Auth } from "@aws-amplify/auth"
 
 export default function CheckoutPage() {
-  const { items, total, clear } = useCart();
+  const { items, clear } = useCart();
+  // const { user } = useAuthenticator((ctx) => [ctx.user]);
+  const { authStatus }   = useAuthenticator((ctx) => [ctx.authStatus]);
+  const [email, setEmail] = React.useState("");
+
+  // When we become signed in, grab the user’s email
+  // React.useEffect(() => {
+  //   if (authStatus === "authenticated") {
+  //     Auth.currentAuthenticatedUser()
+  //       .then((u) => {
+  //         // u.attributes.email is guaranteed once signed in
+  //         setEmail(u.attributes.email);
+  //       })
+  //       .catch(console.error);
+  //   }
+  // }, [authStatus]);
 
   const placeOrder = () => {
-    fetch("/orders", {
+    // const product_ids = items.map((item) => item.id);
+    fetch("https://ht6v4zlpkd.execute-api.us-east-1.amazonaws.com/prod/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items }),
+      mode: "cors",   // optional; this is the default for cross‑origin
+      headers: {
+        "Content-Type": "application/json",
+        // if you need auth:
+        // "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        items, 
+        //user_email: email // or pull dynamically later
+      }),
     })
-      .then((r) => r.json())
-      .then(() => {
-        clear();
-        alert("Order placed! 🎉");
-      })
-      .catch((err) => {
-        console.error("Order failed:", err);
-        alert("Sorry, something went wrong.");
-      });
+    .then((r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    })
+    .then(() => {
+      clear();
+      alert("Order placed! 🎉");
+    })
+    .catch((err) => {
+      console.error("Order failed:", err);
+      alert("Sorry, something went wrong.");
+    });
   };
 
   return (
@@ -32,14 +61,12 @@ export default function CheckoutPage() {
         <>
           <div className="space-y-4">
             {items.map((item) => {
-              // Try both imageUrl and image fields
               const src = item.imageUrl || item.image || "";
               return (
                 <div
                   key={item.id}
                   className="flex items-center justify-between space-x-4"
                 >
-                  {/* Thumbnail + name/qty */}
                   <div className="flex items-center space-x-3">
                     {src ? (
                       <img
@@ -56,8 +83,6 @@ export default function CheckoutPage() {
                       {item.qty} × {item.name}
                     </span>
                   </div>
-
-                  {/* Line total */}
                   <span className="font-medium">
                     ${(item.qty * item.price).toFixed(2)}
                   </span>
@@ -70,7 +95,12 @@ export default function CheckoutPage() {
 
           <div className="flex justify-between text-lg font-semibold">
             <span>Total</span>
-            <span>${total.toFixed(2)}</span>
+            <span>
+              $
+              {items
+                .reduce((sum, p) => sum + p.price * p.qty, 0)
+                .toFixed(2)}
+            </span>
           </div>
 
           <button
