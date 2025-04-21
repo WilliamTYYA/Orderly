@@ -1,0 +1,14 @@
+version: 0.2
+        phases:
+          install:
+            runtime-versions:
+              nodejs: 18
+            commands:
+              - npm install
+          build:
+            commands:
+              - mkdir -p build
+              - zip -r build/lambda.zip . -x "node_modules/*" "*.git*" "build/*"
+        artifacts:
+          files:
+            - build/lambda.zip
