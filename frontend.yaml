@@ -8,10 +8,13 @@ Parameters:
     Default: frontend-3
   RepositoryId:
     Type: String
-    Default: mystevotgit/codepipeline-react
+    Default: mystevotgit/Orderly
   BranchName:
     Type: String
     Default: main
+  Env:
+    Type: String
+    Default: test
   ConnectionArn:
     Type: String
     Description: ARN of CodeStar Connection to GitHub
@@ -64,6 +67,13 @@ Resources:
       DistributionConfig:
         Enabled: true
         DefaultRootObject: index.html
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
         Origins:
           - Id: S3Origin
             DomainName: !GetAtt WebsiteBucket.RegionalDomainName
@@ -78,6 +88,40 @@ Resources:
             QueryString: false
             Cookies:
               Forward: none
+
+  CloudFrontInvalidationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub CloudFrontInvalidationRole-${Env}
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: CloudFrontInvalidationPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "cloudfront:CreateInvalidation"
+                  - "cloudfront:GetInvalidation"
+                Resource: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "codepipeline:PutJobSuccessResult"
+                  - "codepipeline:PutJobFailureResult"
+                Resource: "*"
 
   CodeBuildRole:
     Type: AWS::IAM::Role
@@ -208,7 +252,7 @@ Resources:
 Outputs:
   WebsiteURL:
     Description: URL of the hosted frontend via CloudFront
-    Value: !Sub https://${CloudFrontDistribution.DomainName}/index.html
+    Value: !Sub https://${CloudFrontDistribution.DomainName}/
   PipelineName:
     Value: !Ref FrontendPipeline
   WebsiteBucket:
