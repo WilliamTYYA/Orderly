@@ -1,14 +1,33 @@
 version: 0.2
-        phases:
-          install:
-            runtime-versions:
-              nodejs: 18
-            commands:
-              - npm install
-          build:
-            commands:
-              - mkdir -p build
-              - zip -r build/lambda.zip . -x "node_modules/*" "*.git*" "build/*"
-        artifacts:
-          files:
-            - build/lambda.zip
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 18
+    commands:
+      - echo Installing dependencies...
+      - npm install
+  build:
+    commands:
+      - echo Zipping Lambda function into function.zip...
+      - zip -r function.zip index.js node_modules/
+      
+      - echo Creating appspec.yml...
+      - |
+        cat <<EOT > appspec.yml
+        version: 0.0
+        Resources:
+          - myLambdaFunction:
+              Type: AWS::Lambda::Function
+              Properties:
+                Name: ${LAMBDA_FUNCTION_NAME}
+                Alias: live
+                CurrentVersion: version
+        EOT
+
+      - echo Zipping deployment.zip with function.zip and appspec.yml...
+      - zip deployment.zip function.zip appspec.yml
+
+artifacts:
+  files:
+    - deployment.zip
