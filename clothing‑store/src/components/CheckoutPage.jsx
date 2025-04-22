@@ -34,7 +34,7 @@ export default function CheckoutPage() {
       },
       body: JSON.stringify({
         items, 
-        //user_email: email // or pull dynamically later
+        user_email: "william170111@gmail.com" // or pull dynamically later
       }),
     })
     .then((r) => {
