@@ -20,4 +20,3 @@ artifacts:
   files:
     - '**/*'
   base-directory: build  # Directory with output files (e.g, React app)
-  discard-paths: yes
