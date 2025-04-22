@@ -72,8 +72,8 @@ Resources:
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
           ViewerProtocolPolicy: redirect-to-https
-          AllowedMethods: [GET, HEAD, POST]
-          CachedMethods: [GET, HEAD, POST]
+          AllowedMethods: [GET, HEAD]
+          CachedMethods: [GET, HEAD]
           ForwardedValues:
             QueryString: false
             Cookies:
