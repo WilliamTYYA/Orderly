@@ -2,39 +2,21 @@
 import React from "react";
 import { useCart } from "./CartContext.jsx";
 import { useAuthenticator } from "@aws-amplify/ui-react";
-// import { Auth } from "@aws-amplify/auth"
 
 export default function CheckoutPage() {
   const { items, clear } = useCart();
-  // const { user } = useAuthenticator((ctx) => [ctx.user]);
-  const { authStatus }   = useAuthenticator((ctx) => [ctx.authStatus]);
-  const [email, setEmail] = React.useState("");
-
-  // When we become signed in, grab the user’s email
-  // React.useEffect(() => {
-  //   if (authStatus === "authenticated") {
-  //     Auth.currentAuthenticatedUser()
-  //       .then((u) => {
-  //         // u.attributes.email is guaranteed once signed in
-  //         setEmail(u.attributes.email);
-  //       })
-  //       .catch(console.error);
-  //   }
-  // }, [authStatus]);
+  const { user } = useAuthenticator((ctx) => [ctx.user]);
 
   const placeOrder = () => {
-    // const product_ids = items.map((item) => item.id);
     fetch("https://ht6v4zlpkd.execute-api.us-east-1.amazonaws.com/prod/checkout", {
       method: "POST",
-      mode: "cors",   // optional; this is the default for cross‑origin
+      mode: "cors",
       headers: {
         "Content-Type": "application/json",
-        // if you need auth:
-        // "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({
-        items, 
-        "user_email": "william170111@gmail.com" // or pull dynamically later
+        items,
+        "user_email": user.signInDetails.loginId,
       }),
     })
     .then((r) => {
@@ -43,7 +25,7 @@ export default function CheckoutPage() {
     })
     .then(() => {
       clear();
-      alert("Order placed! 🎉");
+      alert(user.signInDetails.loginId + "'s Order placed! 🎉");
     })
     .catch((err) => {
       console.error("Order failed:", err);
